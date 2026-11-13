@@ -1,14 +1,13 @@
 # Iniciar Kali
 
-Lanzador de Kali Linux para Windows con WSL o Docker Desktop. Sin argumentos, abre Kali si ya está registrada en WSL; si no, muestra el menú.
+Abre `Iniciar-Kali.bat` con doble clic. Si ya tienes Kali en WSL, te abre la terminal. Si no, sale un menú para instalarlo o usar Docker Desktop.
 
 ```bat
-Iniciar-Kali.bat --help
-Iniciar-Kali.bat --wsl --dry-run
 Iniciar-Kali.bat --wsl
+Iniciar-Kali.bat --docker
 Iniciar-Kali.bat --docker --ephemeral
 ```
 
-La instalación mediante WSL puede pedir permisos de administrador y requerir un reinicio. Para Docker, necesitas Docker Desktop.
+Con Docker puedes usar `--workdir "C:\ruta\proyecto"` para elegir qué carpeta aparece en `/workspace`. Los cambios que hagas ahí se guardan en Windows, incluso con `--ephemeral`. Si ya existe el contenedor, usa otro nombre con `--container` para cambiar la carpeta.
 
-Docker monta la carpeta actual (o la indicada con `--workdir`) en `/workspace` con permiso de escritura. Los cambios en esa carpeta siguen en Windows incluso al salir de un contenedor efímero. Un contenedor persistente ya creado conserva su montaje, red y comando inicial. Usa otro nombre con `--container` si necesitas una configuración distinta.
+Para ver todas las opciones, ejecuta `Iniciar-Kali.bat --help`.
