@@ -1,6 +1,8 @@
 @echo off
-chcp 65001 >nul
 setlocal DisableDelayedExpansion
+set "ORIGINAL_CP="
+for /f "tokens=2 delims=:" %%P in ('chcp') do for /f %%C in ("%%P") do set "ORIGINAL_CP=%%C"
+chcp 65001 >nul
 
 :: ============================================================================
 :: Iniciar-Kali.bat
@@ -115,7 +117,7 @@ if /i "%ARG%"=="--workdir" (
 if /i "%ARG%"=="--container" (
     if "%~2"=="" (
         echo [ERROR] Falta nombre para --container.
-        goto :parse_args_err
+        goto :fail_pause
     )
     set "CONTAINER_NAME=%~2"
     shift
@@ -125,10 +127,6 @@ if /i "%ARG%"=="--container" (
 
 echo [ERROR] Argumento no reconocido: %ARG%
 echo Usa "%SCRIPT_NAME% --help" para ver las opciones disponibles.
-goto :fail_pause
-
-:parse_args_err
-echo [ERROR] Revisa los argumentos con "%SCRIPT_NAME% --help".
 goto :fail_pause
 
 :after_args
@@ -193,9 +191,9 @@ echo   [4] Ejecutar Kali Linux efimero en Docker ^(se borra al salir^)
 echo   [5] Salir
 echo.
 set "CHOICE="
-set /p "CHOICE=Elige una opcion [1-5] (Enter = 1): "
+set /p "CHOICE=Elige una opcion [1-5]: "
 call :clean_choice
-if "%CHOICE%"=="" set "CHOICE=1"
+if "%CHOICE%"=="" goto :end_ok
 if "%CHOICE%"=="1" goto :wsl_launch
 if "%CHOICE%"=="2" goto :wsl_tools_flow
 if "%CHOICE%"=="3" (
@@ -221,9 +219,9 @@ echo   [3] Ejecutar Kali Linux efimero en Docker ^(requiere Docker Desktop^)
 echo   [4] Salir
 echo.
 set "CHOICE="
-set /p "CHOICE=Elige una opcion [1-4] (Enter = 1): "
+set /p "CHOICE=Elige una opcion [1-4]: "
 call :clean_choice
-if "%CHOICE%"=="" set "CHOICE=1"
+if "%CHOICE%"=="" goto :end_ok
 if "%CHOICE%"=="1" goto :wsl_flow
 if "%CHOICE%"=="2" (
     set "MODE=docker"
@@ -316,7 +314,8 @@ goto :fail_pause
 echo.
 echo [OK] %DISTRO_NAME% registrado en WSL2.
 echo      Si es la primera vez, Kali te pedira crear un usuario y contrasena Linux.
-goto :wsl_launch
+if /i not "%PROFILE%"=="minimal" echo      Despues de crear el usuario, ejecuta "%SCRIPT_NAME% --tools --profile %PROFILE%".
+goto :wsl_exec_shell
 
 :wsl_needs_reboot
 echo.
@@ -457,18 +456,18 @@ goto :wsl_exec_shell
 :: FLUJO DOCKER
 :: ============================================================================
 :docker_flow
-if not defined DOCKER_BIN (
-    echo [ERROR] No se encontro docker.exe en este equipo.
-    echo         Instala Docker Desktop ^(ej. winget install Docker.DockerDesktop^)
-    echo         o usa el modo WSL2 con: "%SCRIPT_NAME% --wsl"
-    goto :fail_pause
-)
-
 if "%DRY_RUN%"=="1" (
     echo [DRY-RUN] Comprobando Docker daemon y desplegando %IMAGE_NAME%
     echo [DRY-RUN] Workspace: "%WORK_DIR%" -^> /workspace
     echo [DRY-RUN] Contenedor: %CONTAINER_NAME% ^(Ephemeral=%EPHEMERAL%, HostNet=%HOST_NET%, Profile=%PROFILE%^)
     goto :end_ok
+)
+
+if not defined DOCKER_BIN (
+    echo [ERROR] No se encontro docker.exe en este equipo.
+    echo         Instala Docker Desktop ^(ej. winget install Docker.DockerDesktop^)
+    echo         o usa el modo WSL2 con: "%SCRIPT_NAME% --wsl"
+    goto :fail_pause
 )
 
 "%DOCKER_BIN%" info >nul 2>&1
@@ -653,9 +652,11 @@ goto :end_ok
 :fail_pause
 echo.
 pause
+if defined ORIGINAL_CP chcp %ORIGINAL_CP% >nul
 endlocal
 exit /b 1
 
 :end_ok
+if defined ORIGINAL_CP chcp %ORIGINAL_CP% >nul
 endlocal
 exit /b 0
